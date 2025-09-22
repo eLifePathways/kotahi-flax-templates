@@ -1,0 +1,175 @@
+<aside class="side-section">
+  <div class="article-status">
+    <div class="review-timeline-container">
+      <dl class="review-timeline" id="review-timeline" aria-label="Version history">
+        <dt class="review-timeline__event review-timeline__event--revised">Curated article</dt>
+        <dd class="review-timeline__detail review-timeline__event--revised">
+          <p>MetaROR Editors have curated this article.</p>
+          <a class="review-timeline__link" href="https://metaror.org/about-metaror/">About MetaROR’s process</a>
+        </dd>
+      </dl>
+    </div>
+    <div class="article-actions-container">
+      {% if article.parsedSubmission.associated %}
+        <div class="dates">
+          <span class="title">Other versions:</span>
+          {% set relatedManuscripts = article.parsedSubmission.associated.split(', ') %}
+          <ul class="related-manuscripts-list">
+            {% for shortId in relatedManuscripts %}
+              {% set isCurrent = (shortId | int) == (article.shortId | int) %}
+             
+              <li class="{% if isCurrent %}current{% else %}other{% endif %}">
+                <a href="/articles/{{ shortId }}/index.html">Version {{ loop.index }}</a>
+              </li>
+            {% endfor %}
+          </ul>
+          <hr />
+        </div>
+      {% endif %}
+      <ul class="article-actions">
+        <!--
+           <li class="article-actions__list-item">
+          <a class="button button--icon-download button--action" target="_blank" href="https://doi.org/{{ article.parsedSubmission.$doi }}">Download</a>
+        </li>
+           -->
+        <li class="article-actions__list-item">
+          <a class="button button--icon-citation button--action"  id="cite-button" rel="nofollow">Cite</a>
+        </li>
+        <li class="article-actions__list-item">
+          <a class="button button--icon-share button--action" id="share-button" rel="nofollow">Share</a>
+        </li>
+      </ul>
+
+      <div class="dates">
+        <hr />
+        <span class="title">Curated version</span>
+        <span class="time">{{ article.parsedSubmission.curateddate | safe }}</span><br/>
+        <span class="title">Peer reviewed</span>
+        <span class="time">{{ article.parsedSubmission.peerreviewdate | safe }}</span><br/>
+        <span class="title">Article published</span>
+        <span class="time">{{ article.parsedSubmission.preprintposteddate | safe }}</span>
+      </div>
+    </div>
+  </div>
+</aside>
+
+<div id="citeModal" class="modal" style="align-items: center;justify-content: center;background: #0470c022;z-index: 9999;backdrop-filter: blur(4px);">
+  <!-- Modal content -->
+  <div class="modal-content">
+    <div class="modal-content__top">
+    <h5 class="modal-content__title">Cite this article</5>
+    <span id="closeCiteModal" class="close modal-content__close-button">&times;</span>
+    </div>
+    <div class="modal-content__body">
+      <div id="citedArea">
+      {{ article.parsedSubmission.articlecitation | safe }}
+      </div>
+      <br/>
+    </div>
+      <ol class="cite-downloads__list">
+        <li class="cite-downloads__list-item">
+          <button class="button button--clipboard copied" onclick="copyToClipboard()" >Copy to clipboard</button>
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+<div id="shareModal" class="modal" style="align-items: center;justify-content: center;background: #0470c022;z-index: 9999;backdrop-filter: blur(4px);">
+  <!-- Modal content -->
+  <div class="modal-content">
+    <div class="modal-content__top">
+    <h5 class="modal-content__title">Share this article</5>
+    <span id="closeShareModal" class="close modal-content__close-button">&times;</span>
+    </div>
+    <div class="modal-content__body">
+    <div class="form-item">
+      <input readonly="" type="input" class="text-field text-field--clipboard" id="copydoi" value="https://doi.org/{{ article.parsedSubmission.$doi }}">
+      <div class="clipboard-container">
+        <button class="button button--clipboard" onclick="copyToClipboardDoi()">Copy to clipboard</button>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Get the modal
+var closeCiteModal = document.getElementById('closeCiteModal');
+var closeShareModal = document.getElementById('closeShareModal');
+var citeModal = document.getElementById("citeModal");
+var shareModal = document.getElementById("shareModal");
+
+// Get the button that opens the modal
+var citeBtn = document.getElementById("cite-button");
+var shareBtn = document.getElementById("share-button");
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks on the button, open the modal
+citeBtn.onclick = function() {
+  citeModal.style.display = "flex";
+}
+
+shareBtn.onclick = function() {
+  shareModal.style.display = "flex";
+}
+
+// When the user clicks on <span> (x), close the modal
+closeCiteModal.onclick = function() {
+  citeModal.style.display = "none";
+}
+
+closeShareModal.onclick = function() {
+  shareModal.style.display = "none";
+}
+
+function copyToClipboard() {
+  const div = document.getElementById("citedArea");
+  
+  // Create a temporary textarea element
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = div.innerText || div.textContent; // Get the div content
+  
+  // Append it to the body
+  document.body.appendChild(tempTextArea);
+  
+  // Select the content
+  tempTextArea.select();
+  tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+  
+  // Copy the content to clipboard
+  document.execCommand("copy");
+  
+  // Remove the temporary textarea
+  document.body.removeChild(tempTextArea);
+
+}
+
+function copyToClipboardDoi () {
+  const div = document.getElementById("copydoi");
+  
+  // Create a temporary textarea element
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = div.innerText || div.textContent || div.value; // Get the div content
+  
+  // Append it to the body
+  document.body.appendChild(tempTextArea);
+  
+  // Select the content
+  tempTextArea.select();
+  tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+  
+  // Copy the content to clipboard
+  document.execCommand("copy");
+  
+  // Remove the temporary textarea
+  document.body.removeChild(tempTextArea);
+}
+
+
+</script>
+
+
+

@@ -1,0 +1,60 @@
+  <div class="article-content">
+
+<div id="output">
+    <!-- The extracted matches will be shown here -->
+</div>
+
+</div>
+
+<script>
+    // Get the HTML content from the Nunjucks variable
+
+    const figTestContent = `{{ article.meta.source | addIDtoTitles |imagesHandler(article.shortId, 'articles', cmsConfig.group, cmsLayout.hexCode) | safe }}`
+    console.log('figure huh? figTestContent', figTestContent)
+
+    const figarticleShortId = `{{ article.shortId | safe }}`
+    console.log('figure articleShortId', figarticleShortId)
+
+    const figgroupr = `{{ cmsConfig.group.name | safe }}`
+    console.log('figure groupr', figgroupr)
+
+    const figcmsHexCode = `{{ cmsLayout.hexCode | safe }}`
+    console.log('figure cmsHexCode', figcmsHexCode)
+    console.log('figure typeof cmsHexCode', typeof figcmsHexCode)
+
+    
+    const htmlContent = `{{ article.meta.source | addIDtoTitles |imagesHandler(article.shortId, 'articles', cmsConfig.group, cmsLayout.hexCode) | safe }}`;
+
+const parser = new DOMParser();
+const doc = parser.parseFromString(htmlContent, "text/html");
+const output = document.getElementById("output");
+
+// Extract all <figure> tags and the following <p> tags
+const figures = doc.querySelectorAll("figure");
+const results = [];
+
+
+figures.forEach(figure => {
+    const nextElement = figure.nextElementSibling;
+    if (nextElement && nextElement.tagName === "P") {
+        results.push({
+            figure: figure.outerHTML,
+            paragraph: nextElement.outerHTML
+        });
+    }
+});
+
+
+    // Check if there are matches
+    if (results) {
+        results.forEach((match, index) => {
+            // Create a div to display each match
+            const matchDiv = document.createElement("div");
+            matchDiv.innerHTML = `<h3>Figure ${index + 1}</h3><br/>${match.figure}<hr />`;                            
+            output.appendChild(matchDiv);
+        });
+    } else {
+        output.innerHTML = "<p>No matches found.</p>";
+    }
+</script> 
+    

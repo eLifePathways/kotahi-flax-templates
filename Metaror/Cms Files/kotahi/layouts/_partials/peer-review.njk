@@ -1,0 +1,267 @@
+      {% set finalMetaData = article.metaData | filterArray('fieldName', 'submission.articlecitation') | filterArray('fieldName', 'submission.preprintposteddate') | filterArray('fieldName', 'submission.preprinturl') | filterArray('fieldName', 'submission.peerreviewdate') | filterArray('fieldName', 'submission.curateddate') %}
+
+<div class="article-content">
+            <div class="meta-data">
+                <aside class="toc-wrapper">
+                    {% if article.decisions.length > 0 %}
+                      {% set decisionJSONData = article.decisions[0].jsonData | filterArray('field.component', 'ThreadedDiscussion') %}
+                     
+                      {% if decisionJSONData.length > 0 %}
+                        <li>
+                            <a href="#decisions-{{ article.decisions[0].id }}" class="toc-link" >Editorial Assessment</a>
+                        </li>
+                      {% endif %}
+                    {% endif %}
+
+                    {% if article.editors.length > 0 %}
+                        <li>
+                            <a href="#editors" class="toc-link">Editors</a>
+                        </li>
+                    {% endif %} 
+                       
+                    {% if article.reviews.length > 0 %}
+                     {% for review in article.reviews %}
+                        <li>
+                            <a href="#review-{{ review.id }}" class="toc-link">Peer review {{ loop.index }}</a>
+                        </li>
+                     {% endfor %}
+                    {% endif %}
+                     
+                    {% set authorResponse = article.parsedSubmission.authorResponse %}                    
+                    {%  if authorResponse != null %}
+                         <li>
+                            <a href="#authorResponse" class="toc-link">Author Response</a>
+                        </li>
+                    {% endif %}
+                     
+                    {% if finalMetaData.length > 0 %}
+                        <!--
+                        <li>
+                            <a href="#metaData" class="toc-link">Metadata</a>
+                        </li>
+                        -->
+                    {% endif %}
+                     </ul>
+                </aside>
+            </div>
+            <article>
+                     
+                <section class="manuscript">
+                   
+                    {% if article.decisions.length > 0 %}        
+                        {% if decisionJSONData.length > 0 %} 
+                         <div class="manuscript-metadata" style="margin-bottom: unset;">
+                            <h3 id="decisions-{{ article.decisions[0].id }}">Editorial Assessment</h3>
+                            <section class="content">
+                            {% if article.parsedSubmission.associated %}
+                             {% set relatedManuscripts = article.parsedSubmission.associated.split(', ') %}
+                              {% for shortId in relatedManuscripts %}
+                                {% if shortId < article.shortId %}
+                                  <p><i>This is version 2 of this work. The previous version was <a href="/articles/{{ shortId }}/index.html">also reviewed on MetaROR.</a></i></p>
+                                  {% if article.parsedSubmission.showDOI !== 'no' %}
+                                    <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.2.ea">10.70744/MetaROR.{{ article.shortId }}.2.ea</p></div>
+                                  {% endif %}
+                                {% elif shortId > article.shortId %}
+                                  <p><i>This is version 1 of this work. A revised version was <a href="/articles/{{ shortId }}/index.html">also reviewed on MetaROR.</a></i></p>
+                                  {% if article.parsedSubmission.showDOI !== 'no' %}
+                                    <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.1.ea">10.70744/MetaROR.{{ article.shortId }}.1.ea</p></div>
+                                  {% endif %}
+                                {% endif %}
+                              {% endfor %}
+                             {% else %}
+                               {% if article.parsedSubmission.showDOI !== 'no' %}
+                                 <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.1.ea">10.70744/MetaROR.{{ article.shortId }}.1.ea</p></div>
+                               {% endif %}
+                             {% endif %}
+                                {% for decisionData in decisionJSONData %}
+                                    {% if decisionData.fieldName == "recs_from_editor" %}
+                                      <div class="review-field">
+                                        <h4>Recommendations from the editor</h4>
+                                        {{ decisionData.text |safe }}
+                                      </div>
+                                    {% elif decisionData.fieldName == "editor_competing_interests" %}
+                                      <div class="competing-interest-field">
+                                        {{ decisionData.text |safe }}
+                                      </div>
+                                    {% elif decisionData.fieldName == "author_response" %}
+                                      <div class="author_response">
+                                        {{ decisionData.text |safe }}
+                                      </div>
+                                    {% elif decisionData.fieldName == 'curation' %}
+                                      <div class="review-field">
+                                        {{ decisionData.text |safe }}
+                                      </div>
+                                    {% endif %}
+                                {% endfor %}
+                            </section>
+                         </div>
+                        {% endif %}
+                    {% endif %}
+
+                    {% if article.editors.length > 0 %}
+                     <div class="manuscript-metadata">
+                        <h3 id="editors">Editors</h3>
+                        {% for editor in article.editors | sort(attribute='role', reverse=true) %}
+                            <section class="content">
+                                <p class="editor-role">{{ editor.role | convertCamelCaseToTitleCase | replace("Senior Editor","Editor-in-Chief") }}</p>
+                                <p class="user-name">{{ editor.name }}</p>
+                            </section>
+                        {% endfor %}
+                       </div>
+                    {% endif %}
+                     
+                    {% if article.reviews.length > 0 %}
+                        {% for review in article.reviews %}
+                     {% set userIdentity = review.users | map('defaultIdentity') %}
+                       <div class="manuscript-metadata">
+                         {% set reviewNo = loop.index %}
+                          <h3 id="review-{{ review.id }}">Peer Review {{ reviewNo }}</h3>
+
+<p class="user-name">
+  {% set anonymous = false %}
+
+  {% for user in review.users %}
+    {% if 'Anonymous' in user.username %}
+      {% set anonymous = true %}
+    {% endif %}
+  {% endfor %}
+
+  <span style="margin-right: 5px;">
+    {{ review.users | map('username') | sort | join(', ') }}
+  </span>
+
+  {% if not anonymous %}
+    <a class="orcid" target="_blank" title="Visit the ORCID profile of this author" href="https://orcid.org/{{ userIdentity[0].identifier | safe }}" style="background-position-y: 3px;"></a>
+    {% if review.jsonData[2].value.length > 0 %}
+    {% for reviewer in review.jsonData[2].value %}
+      ,<span style="margin-right: 5px;">&nbsp;{{- reviewer.firstName -}}{% if reviewer.middleName %}&nbsp;{{- reviewer.middleName -}}{% endif %}&nbsp;{{- reviewer.lastName -}}</span> <a class="orcid" target="_blank" title="Visit the ORCID profile of this author" href="https://orcid.org/{{ reviewer.orcid }}" style="background-position-y: 3px;"></a>
+    {% endfor %}
+  {% endif %}
+                         
+  {% endif %}
+</p>           
+                            <section class="content">
+                                {% for reviewData in review.jsonData%}
+                                     {% if reviewData.fieldName == "reviewer_competing_interests" %}
+                                      <div class="competing-interest-field">
+                                        {{ reviewData.text |safe }}
+                                      </div>
+                                     {% else %}
+                                     {% if article.parsedSubmission.associated %}
+                                     {% set relatedManuscripts = article.parsedSubmission.associated.split(', ') %}
+                                      {% if article.parsedSubmission.showDOI !== 'no' %}
+                                        {% for shortId in relatedManuscripts %}
+                                          {% if shortId < article.shortId %}
+                                            <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.2.rv{{ reviewNo }}">10.70744/MetaROR.{{ article.shortId }}.2.rv{{ reviewNo }}</p></div>
+                                          {% elif shortId > article.shortId %}
+                                            <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.1.rv{{ reviewNo }}">10.70744/MetaROR.{{ article.shortId }}.1.rv{{ reviewNo }}</p></div>
+                                          {% endif %}
+                                        {% endfor %}
+                                      {% endif %}
+                                     {% else %}
+                                       {% if article.parsedSubmission.showDOI !== 'no' %}
+                                         <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.1.rv{{ reviewNo }}">10.70744/MetaROR.{{ article.shortId }}.1.rv{{ reviewNo }}</p></div>
+                                       {% endif %}
+                                     {% endif %}
+                                    <div class="review-field">
+                                        {{ reviewData.text |safe }}
+                                    </div>
+                                     {% endif %}
+                                {% endfor %}
+                            </section>
+                         </div>
+                        {% endfor %}
+                    {% endif %}
+
+                     {% if authorResponse != null %}
+                     <div class="manuscript-metadata">
+                        <h3 id="authorResponse">Author Response</h3>
+                            <section class="content">
+                                    {% if article.parsedSubmission.associated %}
+                                     {% set relatedManuscripts = article.parsedSubmission.associated.split(', ') %}
+                                      {% if article.parsedSubmission.showDOI !== 'no' %}
+                                        {% for shortId in relatedManuscripts %}
+                                          {% if shortId < article.shortId %}
+                                            <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.2.ar{{ reviewNo }}">10.70744/MetaROR.{{ article.shortId }}.2.ar{{ reviewNo }}</p></div>
+                                          {% elif shortId > article.shortId %}
+                                            <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.1.ar{{ reviewNo }}">10.70744/MetaROR.{{ article.shortId }}.1.ar{{ reviewNo }}</p></div>
+                                          {% endif %}
+                                        {% endfor %}
+                                      {% endif %}
+                                           {% else %}
+                                        {% if article.parsedSubmission.showDOI !== 'no' %}
+                                         <div class="doi-field"><p><a href="https://doi.org/10.70744/MetaROR.{{ article.shortId }}.1.ar{{ reviewNo }}">10.70744/MetaROR.{{ article.shortId }}.1.ar{{ reviewNo }}</p></div>
+                                       {% endif %}
+                                    {% endif %}
+                                    <div class="review-field">
+                                        {{ authorResponse | safe }}
+                                    </div>
+                            </section>
+                         </div>
+                    {% endif %}
+
+                     
+                    {% if finalMetaData.length > 0 %}
+                     <!--
+                     <div class="manuscript-metadata">
+                        <h3 id="metaData">Metadata</h3>
+                        <section class="content">
+                            {% for data in finalMetaData %}    
+                                <div class="review-field">
+                                    {% if data.fieldName === "submission.version" %} <div id="version"><span>Version:</span> {{ data.text | safe }}</div> {% endif %}
+                                </div>
+                            {% endfor %}
+                        </section>
+                     </div>
+                     -->
+                    {% endif %}
+                </section>
+            </article>
+        </div>
+
+
+
+      <script>
+                         
+        window.addEventListener("scroll", function () {
+          var scrollPosition = window.scrollY;
+          var tocLinks = document.querySelectorAll("a.toc-link");
+          tocLinks.forEach(function (link) {
+            var target = document.querySelector(link.hash);
+            if (target) {
+              var targetTop = target.getBoundingClientRect().top + scrollPosition - 200;
+              var targetBottom = targetTop + target.offsetHeight;
+        
+              if (targetTop <= scrollPosition && targetBottom > scrollPosition) {
+                tocLinks.forEach(function (link) {
+                  link.closest("li").classList.remove("active")
+                });
+                link.closest("li").classList.add("active");
+              }
+            }
+          });
+        });
+          
+        document.addEventListener('DOMContentLoaded', () => {
+          function setupAndHandleTocItemClicks(event) {
+            setTimeout(()=>{
+              let targetClass = 'active';
+              const liElements = document.querySelectorAll('li');
+              liElements.forEach(li => {
+                li.classList.remove(targetClass);
+              });
+  
+              let element = event.target.closest("li");
+              if(element) {
+                element.classList.add(targetClass)
+              }
+            }, 1000); 
+          }
+          
+          // Attach click listener to all <a> elements with the "toc-link" class
+          const tocLinks = document.querySelectorAll('a.toc-link');
+          tocLinks.forEach(link => {
+            link.addEventListener('click', setupAndHandleTocItemClicks);
+          });
+        });
+      </script>
