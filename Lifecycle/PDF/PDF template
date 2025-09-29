@@ -1,0 +1,291 @@
+{% set submission = article.submission %}
+{% set contributors = article.articleMetadata.submission.$authors | safe  %}
+
+{% set affilList = [] %}
+{% for contributor in article.articleMetadata.submission.$authors %}
+  {% for affil in contributor.ror %}
+    {% if affil.label not in affilList %}
+      {% set affilList = affilList.concat([affil.label]) %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
+{% set evaluations =  article.articleMetadata.submission.evaluations %}
+{% set sections = {
+    'abstract': submission.$abstract,
+    'evaluations': evaluations,
+    'registration': submission.registration,
+    'materials': submission.materials,
+    'data': submission.data,
+    'code': submission.code,
+    'paper': article.meta.source
+}
+%}
+{% macro renderEvaluations(evaluations) %}
+  <!-- Define the image URL mapping -->
+  {% set IMG_URL_MAP = {
+    'Data-Seer.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/Data-Seer.png?resize=980%2C261&ssl=1',
+    'onlygoodantibodies': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/OGA-bold-undertext-4-min-3.png?resize=1080%2C502&ssl=1',
+    'paperwizard.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/paperwizard.png?w=764&ssl=1',
+    'PCI.jpg': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/PCI.jpg?w=640&ssl=1',
+    'pci-rr.jpg': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/pci-rr.jpg?w=658&ssl=1',
+    'prereview.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/prereview.png?w=443&ssl=1',
+    'RegCheck.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/RegCheck.png?resize=1080%2C225&ssl=1',
+    'research-hub.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/research-hub.png?resize=1080%2C249&ssl=1',
+    'statcheck.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/statcheck.png?w=548&ssl=1',
+    'michelenuijten': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/statcheck.png?w=548&ssl=1',
+    'Unjournal.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/Unjournal.png?w=773&ssl=1',
+    'codecheck_logo.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/codecheck_logo.png',
+    'SciScore-1.png': 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/SciScore-1.png'
+  } %}
+
+  {% if evaluations %}
+      <div class="evaluations-grid">
+          <!-- Header row -->
+          <div class="eval-row eval-header">
+              <div class="eval-cell">Service</div>
+              <div class="eval-cell">Summary</div>
+              <div class="eval-cell">Version</div>
+              <div class="eval-cell">Date</div>
+              <div class="eval-cell">Evaluated</div>
+          </div>
+
+          <!-- Data rows -->
+          {% for evaluation in evaluations %}
+              <div class="eval-row">
+                  {% set parts = evaluation.url | split(',') %}
+
+                  <!-- Service -->
+                  <div class="eval-cell">
+                      {% if parts[1] %}
+                          <a href="{{ parts[1] }}" target="_blank">
+                              {% if parts[0] in IMG_URL_MAP %}
+                                  <img src="{{ IMG_URL_MAP[parts[0]] }}" alt="{{ parts[0] }}" />
+                              {% else %}
+                                  {{ parts[0] }}
+                              {% endif %}
+                          </a>
+                      {% else %}
+                          {{ parts[0] }}
+                      {% endif %}
+                  </div>
+
+                  <!-- Summary -->
+                  <div class="eval-cell">{{ parts[2] if parts[2] else '' }}</div>
+                  
+                  <!-- Version -->
+                  <div class="eval-cell">{{ parts[3] if parts[3] else '' }}</div>
+                  
+                  <!-- Date -->
+                  <div class="eval-cell">{{ parts[4] if parts[4] else '' }}</div>
+
+                  <!-- Evaluated -->
+                  <div class="eval-cell">
+                      <div class="flex-row">
+                          {% for i in range(5, parts | length) %}
+                              {% if parts[i] == '1' %}
+                                  <a href="#" class="button-common icon">
+                                      {% if i - 5 == 0 %}
+                                          <!-- Paper icon -->
+                                          <svg version="1.2" preserveAspectRatio="none" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 16px; height: 22px; transform: scale(0.8);"><g transform="translate(8.881784197001252e-16, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></g></svg>
+                                      {% elif i - 5 == 1 %}
+                                          <!-- Reg icon -->
+                                          <svg version="1.2" preserveAspectRatio="none" style="overflow: visible; width: 24px; height: 19px; opacity: 1; mix-blend-mode: normal; transform: scale(0.8);"><g transform="translate(-1.455894955558383, -1.0958990096247736)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></g></svg>
+                                      {% elif i - 5 == 2 %}
+                                          <!-- Data icon -->
+                                          <svg version="1.2" preserveAspectRatio="none" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 19px; height: 22px; transform: scale(0.8);"><g transform="translate(0, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></g></svg>
+                                      {% elif i - 5 == 3 %}
+                                          <!-- Code icon -->
+                                          <svg version="1.2" preserveAspectRatio="none" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 24px; height: 19px; transform: scale(0.8);"><g transform="translate(-1.0130785099704553e-15, -0.0000016703287746139273) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></g></svg>
+                                      {% endif %}
+                                  </a>
+                              {% endif %}
+                          {% endfor %}
+                      </div>
+                  </div>
+              </div>
+          {% endfor %}
+      </div>
+  {% endif %}
+{% endmacro %}
+
+{% macro renderDeclarations(declarations) %}
+    {% for key, value in declarations %}
+        {% if value %}
+            <h4>{{ key | capitalize }}</h4>
+                {{ value }}
+        {% endif %}
+    {% endfor %}
+{% endmacro %}
+{% macro renderSection(key, content) %}
+    {% if content %}
+        <section id="meta-{{ key }}" class="meta-section">
+            <h3 id="{{ key }}" class="meta-section-title">{{ key | capitalize }}</h3>
+            {% if key == 'evaluations' %}
+                {{ renderEvaluations(content) }}
+            {% else %}
+                {{ content | safe }}
+            {% endif %}
+        </section>
+    {% endif %}
+{% endmacro %}
+
+
+<!DOCTYPE html>
+<html lang="en">
+    <head>
+        <meta charset="UTF-8" />
+        <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+        <title>{{ article.submission.$title }}</title>
+        <link rel="preconnect" href="https://fonts.googleapis.com">
+        <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+        <link href="https://fonts.googleapis.com/css2?family=DM+Sans:ital,opsz,wght@0,9..40,100..1000;1,9..40,100..1000&family=Merriweather:ital,wght@0,300;0,400;0,700;0,900;1,300;1,400;1,700;1,900&family=Montserrat:ital,wght@0,100..900;1,100..900&display=swap" rel="stylesheet">
+    </head>
+    <body>
+        <header class="pdf-header">
+          <div class="lifecycle-logo">
+            <img data-name="LifecycleJournal_Black.jpg" data-fileid="5d1bbf62-3226-45d5-be59-1c9a8142ac18" 
+                src="https://fly.storage.tigris.dev/lifecycle-bucket/9492fc425a06.jpg"" alt="Lifecycle Logo"
+                alt="Lifecycle Journal Logo" />
+        </div>
+    </header>
+      
+        <main>
+            <!-- <div class="lifecycle-logo">
+                <img data-name="LifecycleJournal_Black.jpg" data-fileid="5d1bbf62-3226-45d5-be59-1c9a8142ac18" src="https://fly.storage.tigris.dev/lifecycle-bucket/9492fc425a06.jpg?X-Amz-Algorithm=AWS4-HMAC-SHA256&X-Amz-Content-Sha256=UNSIGNED-PAYLOAD&X-Amz-Credential=tid_FlnhGaMm_eRMKjmXHhZyuRKDcZjugYwQNCmVZNlSwSHyQcMdtf%2F20250131%2Fus-east-1%2Fs3%2Faws4_request&X-Amz-Date=20250131T185049Z&X-Amz-Expires=900&X-Amz-Signature=b4c2b79d0283ccd726ee5b4eb65321e871fc08d1b8754904c529da9dfd7be6fd&X-Amz-SignedHeaders=host&x-id=GetObject" />
+            </div> -->
+            <article>
+                
+
+                  <div class="article-preview-header">
+                    <span class="topics">
+                        {{ article.submission.topics }}
+                    </span>
+                    <span class="article-title">
+                        {{ article.submission.$title }}
+                    </span>
+
+                    <div style="margin: 0 !important; display: flex; flex-direction: column;">
+                        {% for contributor in article.articleMetadata.submission.$authors %}
+                            <span style="margin-left: 0;">
+                                <span style="display: flex; align-items: center; gap: 1ch; margin: 0">
+                                    <strong>
+                                        {{ contributor.firstName }} {{ contributor.middleName }} {{ contributor.lastName }}
+                                    </strong>
+                                    {% if contributor.email %}
+                                        <a style="display: flex;" href="mailto:{{ contributor.email }}">
+                                            <svg version="1.2" preserveAspectRatio="none" viewBox="0 0 512 512" stroke-linecap="null" stroke-linejoin="null" width="20px" height="20px">
+                                                <path d="M64 112c-8.8 0-16 7.2-16 16v22.1L220.5 291.7c20.7 17 50.4 17 71.1 0L464 150.1V128c0-8.8-7.2-16-16-16H64zM48 212.2V384c0 8.8 7.2 16 16 16H448c8.8 0 16-7.2 16-16V212.2L322 328.8c-38.4 31.5-93.7 31.5-132 0L48 212.2zM0 128C0 92.7 28.7 64 64 64H448c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128z" style="fill: rgb(68, 157, 209);"></path>
+                                            </svg>
+                                        </a>
+                                    {% endif %}
+                                    {% if contributor.orcid %}
+                                        <a title="{{ contributor.orcid }}" href="https://orcid.org/{{ contributor.orcid }}">
+                                            <img class="ng-element el-image" data-id="f1206412226d4b6e99b8246aaa823d51" style="padding: 0; opacity: 1; mix-blend-mode: normal; border-radius: 0px; object-fit: cover; object-position: center center; width: 20px; height: 20px;" src="https://uc.uxpin.com/files/89985/97294/ORCID_iD_icon_24x24-a6079546e2c9f3768c818aa206d3f8f1-2c1629.png">
+                                        </a>
+                                    {% endif %}
+                                    {% if contributor.ror %}
+                                    <sup>
+                                    {% for affil in contributor.ror %}
+                                      {% set index = affilList.indexOf(affil.label) + 1 %}
+                                        {{ index }}{% if not loop.last %}, {% endif %}
+                                    {% endfor %}
+                                    </sup>
+                                    {% endif %}
+                                </span>
+                                <!-- {{ contributor.ror.label }} -->
+                            </span>
+                        {% endfor %}
+                      <ol class="affiliation-list" style="margin: 1em 0 0 0; padding-left: 0; list-style-position: inside;">
+                        {% for affil in affilList %}
+                          <li>{{ affil }}</li>
+                        {% endfor %}
+                      </ol>
+                    </div>
+
+                <span class="published-date">
+                    Published on {{ article.articleMetadata.submission.datePublished }}
+                </span>
+
+                    
+                     <div class="submission-type">
+                       {% if article.articleMetadata.submission.type == 'ResearchPlan'%}
+                          Research Plan
+                       {% endif %}
+                       {% if article.articleMetadata.submission.type == 'OutcomesReport' %}
+                         Outcomes Report
+                       {% endif %}
+                     </div>
+
+                    <span class="header-doi-and-licenses">
+                        DOI: 
+                        <a href="https://doi.org/{{ submission.$doi }}">
+                            {{ submission.$doi }}
+                        </a>
+                        {% if cmsLayout.publishConfig.licenseUrl %}
+                            <a href="{{cmsLayout.publishConfig.licenseUrl}}">
+                                {{cmsLayout.publishConfig.licenseUrl}}
+                            </a>
+                        {% endif %}
+                    </span>
+                    
+                  <div class="header-bottom">
+                      <div>
+                          <a href="#meta-paper" class="button-common icon">
+                            <svg version="1.2" preserveAspectRatio="none" class="ng-element" data-id="6e6fcd8020404bd38e89f394af88db10" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 16px; height: 22px; transform: scale(0.8);"><g transform="translate(8.881784197001252e-16, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></g><defs><path id="path-1739565650498244" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></defs></svg>
+                          </a>
+                          <a href="#meta-registration" class="button-common icon">
+                            <svg version="1.2" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="ng-element" data-id="7cc2619f8c58485b8a6eb3e147080999" style="overflow: visible; width: 24px; height: 19px; opacity: 1; mix-blend-mode: normal; transform: scale(0.8);"><defs><path id="path-1739565650495238" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></defs><g transform="translate(-1.455894955558383, -1.0958990096247736)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></g></svg>
+                          </a>
+                          <a href="#meta-data" class="button-common icon">
+                            <svg version="1.2" preserveAspectRatio="none" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 19px; height: 22px; transform: scale(0.8);"><g transform="translate(0, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></g><defs><path id="path-1739565650491233" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></defs></svg>
+                          </a>
+                          <a href="#meta-code" class="button-common icon">
+                            <svg version="1.2" preserveAspectRatio="none" class="ng-element" data-id="4165d51d892644f09982a9c0e74a1343" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 24px; height: 19px; transform: scale(0.8);"><g transform="translate(-1.0130785099704553e-15, -0.0000016703287746139273) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></g><defs><path id="path-1739565650483228" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></defs></svg>
+                          </a>
+                      </div>
+                  </div>
+        
+                </div>
+              
+                {% for key, content in sections %}
+                    {{ renderSection(key, content) }}
+                {% endfor %}
+
+
+ {% if submission.notes %}
+  <div class="notes-section">
+    <h4>Notes</h4>
+    {{ submission.notes | safe }}
+  </div>             
+{% endif %}
+
+
+                <section id="meta-declarations" class="meta-section">
+                  <h3 id="declarations" class="meta-section-title">Declarations</h3>
+                  
+                  {% if submission.ethics %}
+                      <h4>Ethics</h4>
+                      {{ submission.ethics | safe }}
+                  {% endif %}
+                  
+                  {% if submission.competingInterests %}
+                      <h4>Competing Interests</h4>
+                      {{ submission.competingInterests | safe }}
+                  {% endif %}
+                  
+                  {% if submission.Funding %}
+                      <h4>Funding</h4>
+                      {{ submission.Funding | safe }}
+                  {% endif %}
+                  
+                  {% if submission.authorContributions %}
+                      <h4>Author Contributions</h4>
+                      {{ submission.authorContributions | safe }}
+                  {% endif %}
+
+                </section>
+            </article>
+        </main>
+    </body>
+</html>

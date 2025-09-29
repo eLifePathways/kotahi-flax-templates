@@ -1,0 +1,17 @@
+	<div class="tabbed">
+		<input type="radio" id="tab1" name="css-tabs" checked>
+		<input type="radio" id="tab3" name="css-tabs">
+		
+		<ul class="tabs">
+			<li class="tab"><label for="tab1">Peer Review</label></li>
+			<li class="tab"><label for="tab3">Full text</label></li>
+		</ul>
+		
+		<div class="tab-content">
+          {% include "_partials/peer-review.njk" %}			
+        </div>
+		
+		<div class="tab-content">
+          {% include "_partials/full-text.njk" %}
+		</div>
+	</div>

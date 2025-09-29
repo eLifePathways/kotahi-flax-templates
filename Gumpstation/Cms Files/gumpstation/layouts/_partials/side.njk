@@ -1,0 +1,242 @@
+<script> 
+  const article = JSON.parse('{{ article | dump | escape }}');
+  console.log(article);
+ </script>
+
+<aside class="side-section">
+  <div class="article-status">
+    <div class="review-timeline-container">
+      <dl class="review-timeline" id="review-timeline" aria-label="Version history">
+        <dt class="review-timeline__event review-timeline__event--revised">Curated article</dt>
+        <dd class="review-timeline__detail review-timeline__event--revised">
+          <p>Gump Station has curated this project application.</p>
+          <a class="review-timeline__link" href="https://www.moorea.berkeley.edu/">About Gump Station’s process</a>
+        </dd>
+      </dl>
+    </div>
+    <div class="article-actions-container">
+      <ul class="article-actions">
+        <li class="article-actions__list-item">
+                  {% if article.files and article.files.length > 0 %}
+                    {% set pdfFiles = [] %}
+                    {% for file in article.files %}
+                      {% if file.name and file.name.includes('.pdf') %}
+                        {% set pdfFiles = (pdfFiles.push(file), pdfFiles) %}
+                      {% endif %}
+                    {% endfor %}
+                    
+                    {% if pdfFiles.length > 0 %}
+                      {% set lastPdf = pdfFiles[pdfFiles.length - 1] %}
+                      {% if lastPdf and lastPdf.storedObjects and lastPdf.storedObjects[0] %}
+                        {% set linkUrl = lastPdf.storedObjects[0].url %}
+                        {% set linkText = 'Download' %}
+                        {{ ('<a class="button button--icon-download button--action"  id="download-button" rel="nofollow" href="' + linkUrl + '" download="' + article.parsedSubmission.$title +'" target="_blank">' + linkText + '</a>') | linkHandler(article.shortId, 'supplementary-files', cmsConfig.group, cmsLayout.hexCode) | safe }}
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}   
+        </li>
+        <li class="article-actions__list-item">
+          <a class="button button--icon-citation button--action"  id="cite-button" rel="nofollow">Cite</a>
+        </li>
+        <li class="article-actions__list-item">
+          <a class="button button--icon-share button--action" id="share-button" rel="nofollow">Share</a>
+        </li>
+      </ul>
+        <hr />
+<div class="review-timeline-container local-context-container">
+  <dl class="review-timeline" aria-label="Local Contexts">
+    <dt class="review-timeline__event review-timeline__event--revised">Local Contexts</dt>
+    <dd class="review-timeline__detail review-timeline__event--revised">
+      {# Look in articleMetadata.submission first, then parsedSubmission #}
+      {% set lc = 
+        (article.articleMetadata and article.articleMetadata.submission and article.articleMetadata.submission.$localContext) 
+        or (article.parsedSubmission and article.parsedSubmission.$localContext) 
+      %}
+
+      {% if lc and lc.label %}
+        <div class="local-context-labels">
+          {% for label in lc.label %}
+            <a href="{{ lc.url }}" target="_blank" rel="noopener noreferrer" title="{{ label.labelText }}">
+              <img src="{{ label.imgUrl }}" alt="{{ label.name }}" class="local-context-label" />
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+
+      {% if lc and lc.notice %}
+        <div class="local-context-notices">
+          {% for notice in lc.notice %}
+            <a href="{{ lc.url }}" target="_blank" rel="noopener noreferrer" title="{{ notice.defaultText }}">
+              <img src="{{ notice.imgUrl }}" alt="{{ notice.name }}" class="local-context-notice" />
+            </a>
+          {% endfor %}
+        </div>
+      {% endif %}
+    </dd>
+  </dl>
+</div>
+
+
+<!--
+      <div class="dates">
+        <span class="title">Curated version</span>
+        <span class="time">{{ article.parsedSubmission.curateddate | safe }}</span><br/>
+        <span class="title">Peer reviewed</span>
+        <span class="time">{{ article.parsedSubmission.peerreviewdate | safe }}</span><br/>
+        <span class="title">Preprint posted</span>
+        <span class="time">{{ article.parsedSubmission.preprintposteddate | safe }}</span>
+      </div>
+-->
+    </div>
+  </div>
+</aside>
+
+<div id="citeModal" class="modal modal--cite">
+  <!-- Modal content -->
+  <div class="modal-content modal-content--cite">
+    <div class="modal-content__top">
+      <h5 class="modal-content__title">Cite this article</h5>
+      <span id="closeCiteModal" class="close modal-content__close-button">&times;</span>
+    </div>
+    <div class="modal-content__body">
+      <div id="citedArea">
+        {% set authors = article.headerInfo.authorNames %}
+        {% for author in authors %}
+          {{- author.lastName -}}, {{ author.firstName[0] }}.{% if author.middleName and author.middleName.length > 0 %} {{ author.middleName[0] }}.{% endif %}
+          {% if not loop.last %}{% if loop.index == loop.length - 1 %}, & {% else %}, {% endif %}{% endif %}
+        {% endfor %}
+        {% set pubYear = article.headerInfo.publishedOn.split('-')[0] %}
+        ({{ pubYear }}).
+        <span style="font-style: italic;">{{ article.parsedSubmission.$title or 'Untitled' }}</span>. 
+        iPlaces Gump. https://doi.org/{{ article.parsedSubmission.$doi or 'N/A' }}
+      </div>
+
+      <ol class="cite-downloads__list">
+        <li class="cite-downloads__list-item">
+          <button id="cite-copy-btn" class="button button--clipboard" onclick="copyToClipboard()">Copy to clipboard</button>
+          <p id="cite-copy-status" style="display: none; font-size: 0.85rem; color: green; margin-top: 0.5rem;">
+            ✅ Copied!
+          </p>
+        </li>
+      </ol>
+    </div>
+  </div>
+</div>
+
+
+<div id="shareModal" class="modal" style="align-items: center;justify-content: center;background: #0470c022;z-index: 9999;backdrop-filter: blur(4px);">
+  <!-- Modal content -->
+  <div class="modal-content">
+    <div class="modal-content__top">
+    <h5 class="modal-content__title">Share this article</h5>
+    <span id="closeShareModal" class="close modal-content__close-button">&times;</span>
+    </div>
+    <div class="modal-content__body">
+    <div class="form-item">
+      <input readonly="" type="input" class="text-field text-field--clipboard" id="copydoi" value="https://doi.org/{{ article.parsedSubmission.$doi }}">
+      <div class="clipboard-container">
+        <button class="button button--clipboard" onclick="copyToClipboardDoi()">Copy to clipboard</button>
+        <p id="share-copy-status" style="display: none; font-size: 0.85rem; color: green; margin-top: 0.5rem;">
+            ✅ Copied!
+          </p>
+      </div>
+    </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// Get the modal
+var closeCiteModal = document.getElementById('closeCiteModal');
+var closeShareModal = document.getElementById('closeShareModal');
+var citeModal = document.getElementById("citeModal");
+var shareModal = document.getElementById("shareModal");
+
+// Get the button that opens the modal
+var citeBtn = document.getElementById("cite-button");
+var shareBtn = document.getElementById("share-button");
+
+// Get the <span> element that closes the modal
+var span = document.getElementsByClassName("close")[0];
+
+// When the user clicks on the button, open the modal
+citeBtn.onclick = function() {
+  citeModal.style.display = "flex";
+}
+
+shareBtn.onclick = function() {
+  shareModal.style.display = "flex";
+}
+
+// When the user clicks on <span> (x), close the modal
+closeCiteModal.onclick = function() {
+  citeModal.style.display = "none";
+}
+
+closeShareModal.onclick = function() {
+  shareModal.style.display = "none";
+}
+
+function copyToClipboard() {
+  const div = document.getElementById("citedArea");
+  
+  // Create a temporary textarea element
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = div.innerText || div.textContent; // Get the div content
+  
+  // Append it to the body
+  document.body.appendChild(tempTextArea);
+  
+  // Select the content
+  tempTextArea.select();
+  tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+  
+  // Copy the content to clipboard
+  document.execCommand("copy");
+  
+  // Remove the temporary textarea
+  document.body.removeChild(tempTextArea);
+
+    // Show confirmation message
+  const status = document.getElementById("cite-copy-status");
+  status.style.display = "block";
+
+  // Hide after 2 seconds
+  setTimeout(() => {
+    status.style.display = "none";
+  }, 2000);
+}
+
+function copyToClipboardDoi () {
+  const div = document.getElementById("copydoi");
+  
+  // Create a temporary textarea element
+  const tempTextArea = document.createElement("textarea");
+  tempTextArea.value = div.innerText || div.textContent || div.value; // Get the div content
+  
+  // Append it to the body
+  document.body.appendChild(tempTextArea);
+  
+  // Select the content
+  tempTextArea.select();
+  tempTextArea.setSelectionRange(0, 99999); // For mobile devices
+  
+  // Copy the content to clipboard
+  document.execCommand("copy");
+  
+  // Remove the temporary textarea
+  document.body.removeChild(tempTextArea);
+
+  // Show confirmation message
+  const status = document.getElementById("share-copy-status");
+  status.style.display = "block";
+
+  // Hide after 2 seconds
+  setTimeout(() => {
+    status.style.display = "none";
+  }, 2000);
+}
+
+</script>
+
+

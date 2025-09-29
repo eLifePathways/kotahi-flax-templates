@@ -1,0 +1,109 @@
+<!DOCTYPE html>
+
+<html lang="{% if lang %}{{lang}}{% else %} {{site.lang}}{% endif %}" class="no-js">
+
+    <head>
+        <meta charset="UTF-8">
+        <meta name="viewport" content="width=device-width">
+
+<title>
+  {% if article and article.articleMetadata and article.articleMetadata.submission and article.articleMetadata.submission.$title %}
+    {{ article.articleMetadata.submission.$title }} | Lifecycle Journal
+  {% else %}
+    Lifecycle Journal
+  {% endif %}
+</title>
+
+
+        <script type="module">
+            document
+                .documentElement
+                .classList
+                .remove('no-js');
+            document
+                .documentElement
+                .classList
+                .add('js');
+        </script>
+
+        <meta name="description" content="{{site.description}}">
+        <meta property="og:title" content="{{cmsLayout.publishConfig.title | title | safe}}: {{article.articleMetadata.submission.$title | safe}}">
+        <meta property="og:description" content="{% if description %}{{description}}{% else %}{{site.description}}{% endif %}">
+        <meta property="og:image" content="{{site.image}}">
+        <meta property="og:image:alt" content="{{site.imageAlt}}">
+        <meta property="og:locale" content="{{site.locale}}">
+        <meta property="og:type" content="website">
+        <meta name="twitter:card" content="{{site.image}}">
+        <meta property="og:url" content="{{site.url}}">
+
+        <link rel="icon" href="https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/cropped-LJ-symbol-color.png?fit=32%2C32&amp;ssl=1" sizes="32x32">
+        <link rel="icon" href="https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/cropped-LJ-symbol-color.png?fit=192x192&amp;ssl=1" sizes="192x192">
+        <link rel="apple-touch-icon" href="https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/cropped-LJ-symbol-color.png?fit=180x180&amp;ssl=1">
+
+        <meta name="twitter:dnt" content="on">
+                <meta name="citation_title" content="{{article.articleMetadata.submission.$title | safe}}">
+                    {% for author in article.articleMetadata.submission.$authors %}
+                            <meta name="citation_author" content="{{author.lastName}}, {{author.firstName}}">	
+                    {% endfor %}
+                {# <meta name="googlebot" content="noindex, nofollow, noarchive" /> #}
+                <meta name="citation_publication_date" content="{{ article.headerInfo.publishedOn | replace('Z','') | postDate }}">	
+                <meta name="citation_journal_title" content="{{cmsLayout.publishConfig.title | title | safe}}">
+        <meta name="citation_volume" content="{{article.articleMetadata.submission.$volumeNumber | safe }}">
+        <meta name="citation_issue" content="{{article.articleMetadata.submission.$issueNumber | safe }}">
+        {% block gfonts %}
+            {% include "_partials/fonts.njk" %}
+        {% endblock %}
+
+        {% block styles %}
+            <link rel="stylesheet" href="/{% if cmsLayout.hexCode %}{{cmsLayout.hexCode}}/{% endif %}assets/css/main.css?{{ [1,2,3,4,5,6,7,8,9] | random }}{{ [1,2,3,4,5,6,7,8,9] | random }}{{ [1,2,3,4,5,6,7,8,9] | random }}">
+        {% endblock %}
+
+    </head>
+
+    <body class="{{class}} {% block bodyclass %}{% endblock %}">
+        
+        {% block styletag %}
+            {% include "_partials/style-tag.njk" %}
+        {% endblock %}
+
+        {% block topbar %}
+            {% include "_partials/menu.njk" %}
+        {% endblock %}
+
+        {% block side %}{% endblock %}
+
+        {% block content %}
+            {{content | safe}}
+        {% endblock %}
+
+        {% block partners %}
+            {% include "_partials/partners.njk" %}
+        {% endblock %}
+
+        {% block footer %}
+            {% include "_partials/footer.njk" %}
+        {% endblock %}
+
+        {# check instant #}
+        <script src="//instant.page/5.1.0" type="module" integrity="sha384-by67kQnR+pyfy8yWP4kPO12fHKRLHZPfEsiSXR8u2IKcTdxD805MGUXBzVPnkLHw"></script>
+        {% block scripts %}
+            <script type="module" src="/assets/js/read.js"></script>
+        {% endblock %}
+
+        {% block printpreview %}{% endblock %}
+
+        <script>
+            // wrap tables into a scrollable div to avoid overflow and keep em readable
+            document.addEventListener("DOMContentLoaded", () => {
+              const tables = document.querySelectorAll("table");
+              tables.forEach(table => {
+                  const wrapper = document.createElement("div");
+                  wrapper.className = "table-wrapper";
+                  table.parentNode.insertBefore(wrapper, table);
+                  wrapper.appendChild(table);
+              });
+            });
+        </script>
+
+    </body>
+</html>

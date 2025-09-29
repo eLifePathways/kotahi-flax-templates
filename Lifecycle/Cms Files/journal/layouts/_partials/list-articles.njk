@@ -1,0 +1,37 @@
+<section class="articles-list">
+    {% if articleQuery.articles.length == 0 %}
+        No articles published yet.
+    {% endif %}
+
+    {% for article in pagination.items %}
+        <article>
+            <span class="topics">
+                {{ article.headerInfo.topics }}
+            </span>
+            <h2 class="article-title">
+                <a href="{{cmsConfig.defaultArticleDirectory}}{{article.shortId}}/index.html">{{ article.headerInfo.title | safe }}</a>
+            </h2>
+
+{% if article.parsedSubmission.contributors %}
+  <span class="author-name">
+    {% for contributor in article.parsedSubmission.contributors %}
+      {{ contributor.firstName }}
+      {% if contributor.middleName %}{{ " " ~ contributor.middleName }}{% endif %}
+      {{ " " ~ contributor.lastName }}{% if not loop.last %}, {% endif %}
+    {% endfor %}
+  </span>
+{% endif %}
+                                                     
+            <p class="published-date">
+                Published on <time datetime="article.headerInfo.publishedOn">{{ article.parsedSubmission.datePublished | safe }}</time>
+            </p>
+
+        </article>
+    {% endfor %}
+</section>
+
+{% if pagination.pages.length > 1 %}
+    <div class="pagination-page">
+        {% include "_partials/article-page-links.njk" %}
+    </div>
+{% endif %}

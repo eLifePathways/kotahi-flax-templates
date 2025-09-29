@@ -1,0 +1,401 @@
+<script>console.log('ARTICLE:', {{ article | dump | safe }});</script>
+{% set currentPage = article %}
+{% extends '../layouts/base.njk' %}
+{% set title = article.meta.title %}
+{% block content %}
+ 
+{% set rorArray = [] %}
+{% if article.parsedSubmission.contributors %}
+  {% set people = article.parsedSubmission.contributors %}
+{% elif article.parsedSubmission.$authors %}
+  {% set people = article.parsedSubmission.$authors %}
+{% else %}
+  {% set people = [] %}
+{% endif %}
+
+{% for contributor in people %}
+  {% set rors = contributor.ror %}
+  {% if rors is not iterable %}
+    {% set rors = [rors] %}
+  {% endif %}
+  {% for ror in rors %}
+    {% if ror and ror.label and not (ror.label in rorArray) %}
+      {% set rorArray = (rorArray.push(ror.label), rorArray) %}
+    {% endif %}
+  {% endfor %}
+{% endfor %}
+
+
+<script>
+  const rorArray = {{ rorArray | dump | safe }};
+</script>
+    <script>
+        window.addEventListener('load', () => {
+          const { keys, values, entries } = Object
+          const $ = sel => document.querySelector(sel)
+          const render = (arr, cb) => (arr || []).map(cb).join('')
+          const camelCaseToHumanReadable = str => {
+              const result = str.replace(/([A-Z])/g, ' $1').toLowerCase();
+              return result.replace(/\b\w/g, char => char.toUpperCase());
+          }
+          const toReadableString = (str) => {
+              if (!str) return '';
+              
+              return str
+                .replace(/[-_.]/g, ' ')
+                .replace(/([a-z0-9])([A-Z])/g, '$1 $2')
+                .replace(/([A-Z])([A-Z][a-z])/g, '$1 $2')
+                .replace(/\s+/g, ' ')
+                .trim()
+                .split(' ')
+                .map(word => word ? word.charAt(0).toUpperCase() + word.slice(1).toLowerCase() : '')
+                .join(' ');
+          }
+        
+          // #region articleMeta
+          const submission = {{ article.parsedSubmission | dump | safe }}
+          const find = field => submission[field] ?? null
+
+          const abstract = find('$abstract')
+          const evaluations = find('evaluations')
+          const registration = find('registration')
+          const materials = find('materials')
+          const data = find('data')
+          const code = find('code')
+          const contributors = find('contributors') || find('$authors')
+          
+          const authorContributions = `{{ article.articleMetadata.submission.authorContributions | safe }}`
+          // #endregion articleMeta
+
+          // #region Contributors
+          const container = $()
+          const renderAuthors = () => {
+          const authorsLi = render(contributors, (contributor, i) => { 
+              const { email = '', firstName = '', lastName = '', middleName = '', orcid = '', ror = null } = contributor;
+              const rors = Array.isArray(ror) ? ror : ror ? [ror] : [];
+              const superscripts = rors.map(r => {
+                const index = rorArray.indexOf(r?.label);
+                return index !== -1 ? `<sup>${index + 1}</sup>` : '';
+              }).join('');
+
+              const { value: rorUrl, label: rorName } = ror || {}
+              const mailIcon = '<svg version="1.2" preserveAspectRatio="none" viewBox="0 0 512 512" stroke-linecap="null" stroke-linejoin="null" width="20px" height="20px"><path d="M64 112c-8.8 0-16 7.2-16 16v22.1L220.5 291.7c20.7 17 50.4 17 71.1 0L464 150.1V128c0-8.8-7.2-16-16-16H64zM48 212.2V384c0 8.8 7.2 16 16 16H448c8.8 0 16-7.2 16-16V212.2L322 328.8c-38.4 31.5-93.7 31.5-132 0L48 212.2zM0 128C0 92.7 28.7 64 64 64H448c35.3 0 64 28.7 64 64V384c0 35.3-28.7 64-64 64H64c-35.3 0-64-28.7-64-64V128z" style="fill: rgb(68, 157, 209);"></path></svg>'
+              const orcidIcon = '<img class="ng-element el-image" data-id="f1206412226d4b6e99b8246aaa823d51" style="padding: 0; opacity: 1; mix-blend-mode: normal; border-radius: 0px; object-fit: cover; object-position: center center; width: 20px; height: 20px;" src="https://uc.uxpin.com/files/89985/97294/ORCID_iD_icon_24x24-a6079546e2c9f3768c818aa206d3f8f1-2c1629.png">'
+              const emailLink = email ? `<a style="display: flex;" href="mailto:${email}">${mailIcon}</a>` : ''
+              const orcidLink = orcid ? `<a title="${orcid}" href="https://orcid.org/${orcid}">${orcidIcon}</a>` : ''
+              const comma = i !== contributors?.length - 1 ? ',' : ''
+              return`
+              <li style="margin-left: 0;" class="flex-row">
+                <span style="display: flex; align-items: center; gap: 1ch; margin: 0">
+                    ${firstName}
+                    ${middleName}
+                    ${lastName}
+                    ${superscripts}
+                </span>
+                  ${emailLink}
+                  ${orcidLink}
+                  ${comma}
+     
+              </li>`
+            })
+
+            return `${authorsLi}`
+          }
+
+          $('#authors-contributors').innerHTML = renderAuthors()
+        
+          // #region Content
+          const paper = `{{ article.meta.source | imagesHandler(article.shortId, 'articles', cmsConfig.group, cmsLayout.hexCode) | makeSvgsFromLatex(true) | safe }}`
+        
+          const evaluationsContent = () => {
+            if (!evaluations) return null
+            const WP_URL_PREFIX = 'https://i0.wp.com/lifecyclejournal.org/wp-content/uploads/'
+            const ICONS = {
+              paper: '<svg version="1.2" preserveAspectRatio="none" class="ng-element" data-id="6e6fcd8020404bd38e89f394af88db10" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 16px; height: 22px;"><g transform="translate(8.881784197001252e-16, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></g><defs><path id="path-1739565650498244" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></defs></svg>',
+              reg: '<svg version="1.2" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="ng-element" data-id="7cc2619f8c58485b8a6eb3e147080999" style="overflow: visible; width: 24px; height: 19px; opacity: 1; mix-blend-mode: normal;"><defs><path id="path-1739565650495238" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></defs><g transform="translate(-1.455894955558383, -1.0958990096247736)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></g></svg>',
+              data: '<svg version="1.2" preserveAspectRatio="none" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 19px; height: 22px;"><g transform="translate(0, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></g><defs><path id="path-1739565650491233" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></defs></svg>',
+              code: '<svg version="1.2" preserveAspectRatio="none" class="ng-element" data-id="4165d51d892644f09982a9c0e74a1343" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 24px; height: 19px; ;"><g transform="translate(-1.0130785099704553e-15, -0.0000016703287746139273) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></g><defs><path id="path-1739565650483228" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></defs></svg>',
+            }
+
+            const COLUMNS = ['Service', 'Summary', 'Version', 'Date', 'Evaluated']
+            const ROWS = evaluations
+
+            const TDATA = evaluationData => {
+              const [name = '', url, summary, version, date, ...iconsFromData] = evaluationData?.url.split(',') ?? []
+              const imgUrl = name.includes('.') && `${WP_URL_PREFIX}${name}`
+              const alt = toReadableString(name)
+
+              const serviceRender = imgUrl ? `<img src="${imgUrl}" alt="${alt}" />` : `<span class="service-name">${name}</span>`
+              const iconsRender = render(values(ICONS), (icon, i) => iconsFromData[i] === '1' ? `<a href='#' class="button-common icon">${icon}</a>` : '')
+        
+              const tableData = {
+                service: `<a href="${url}" target="_blank">${serviceRender}</a>`,
+                summary: summary || '?',
+                version: version || '?',
+                date: date || '?',
+                evaluated: `<div class='flex-row'>${iconsRender}</div>`,
+              }
+
+              return values(tableData)
+            }
+
+            const rowRender = ev => render(TDATA(ev), td => `<td>${td}</td>`)
+            const columnsRender = render(COLUMNS, col => `<th>${col}</th>`)                 
+            const rowsRender = render(ROWS, evaluation => `<tr>${rowRender(evaluation)}</tr>`)
+  
+            return `
+              <div class="table-wrapper">
+                <table class="evaluations-table">
+                  <thead><tr>${columnsRender}</tr></thead>
+                  <tbody>${rowsRender}</tbody>
+                </table>
+              </div>
+            `
+          }
+        
+          const declarationsContent = () => {
+            const declarationsSections = ['ethics','competingInterests', 'Funding', 'authorContributions']
+        
+            return render(declarationsSections, s => {
+              const value = find(s)
+              if (!value) return ''
+              const val = value
+              return `<h4>${camelCaseToHumanReadable(s)}</h4>${val}`
+            })
+          }
+          // #endregion Content
+        
+          // #region Sections
+          const sections = {
+            abstract,
+            evaluations: evaluationsContent(),
+            registration,
+            materials,
+            data,
+            code,
+            paper,
+            declarations: declarationsContent(),
+          }
+        
+          const createSection = ([key, content]) => {
+            if (!content) return
+            const tocWrapper = $('.toc ol')
+            const manuscript = $('.manuscript')
+        
+            const li = document.createElement('li')
+            const a = document.createElement('a')
+            a.href = `#meta-${key}`
+            a.textContent = key
+            li.appendChild(a)
+            tocWrapper.appendChild(li)
+        
+            const section = document.createElement('section')
+            section.id = `meta-${key}`
+            section.classList.add('meta-section')
+            section.innerHTML = `<h3 id="${key}" class="meta-section-title">${key}</h3>${content}`
+            manuscript.appendChild(section)
+          }
+        
+          entries(sections).forEach(createSection)
+          // #endregion Sections
+        
+          window.addEventListener('scroll', () => {
+            const scrollPosition = window.scrollY
+            const tocLinks = document.querySelectorAll('.toc ol li a')
+        
+            tocLinks.forEach(link => {
+              const target = $(link.hash)
+        
+              if (target) {
+                const { top } = target.getBoundingClientRect()
+                const targetTop = top + scrollPosition - 150
+                const targetBottom = targetTop + target.offsetHeight
+                const isInView = targetTop <= scrollPosition && targetBottom > scrollPosition
+        
+                if (isInView) {
+                  tocLinks.forEach(l => l.closest('li').classList.remove('active'))
+                  link.closest('li').classList.add('active')
+                }
+              }
+            })
+          })
+
+          const copyToClipboardBtn = $('#copy-to-clipboard')
+          copyToClipboardBtn.addEventListener('click', () => {
+            navigator.clipboard.writeText(`{{ article.parsedSubmission.cite | safe }}`)
+            document.activeElement.blur()
+          })
+
+
+        })
+    </script>
+
+    <main>
+        <div class="article-preview-header">
+            <span class="topics">
+                {{ article.headerInfo.topics }}
+            </span>
+            <span class="article-title">
+                {{ article.headerInfo.title }}
+            </span>
+            <ul id="authors-contributors" class="flex-row" style="margin: 0;"></ul>
+
+
+            {% if rorArray.length > 0 %}
+              <ol id="affiliations-list" style="margin-left: 20px;">
+                {% for re in rorArray %}
+                  <li style="margin-left: 0px;">{{ re | safe }}</li>
+                {% endfor %}
+              </ol>
+            {% endif %}
+
+            {% if article.parsedSubmission.datePublished %}
+                <p >
+                    Published on {{ article.parsedSubmission.datePublished | safe }}
+                </p>
+            {% endif %}
+
+          <!-- This is what I have added -->
+          <div class="version-and-status">
+              Version {{ article.articleMetadata.submission.version }} | Status: {{ article.parsedSubmission.status }}
+          </div>
+
+          {% if article.parsedSubmission.dateStatus %}
+            <div class="status-date">
+              Status Date: {{ article.parsedSubmission.dateStatus | safe }}
+            </div>
+          {% endif %}
+
+          <div id="submission-type" data-raw="{{ article.articleMetadata.submission.type }}"></div>
+
+          <script>
+            const raw = document.getElementById('submission-type').dataset.raw;
+            const withSpaces = raw.replace(/([a-z])([A-Z])/g, '$1 $2');
+            document.getElementById('submission-type').textContent = withSpaces;
+          </script>
+
+          <span class="header-doi-and-licenses">
+            <p class="doi"> DOI: 
+            <a href="https://doi.org/{{ article.headerInfo.DOI }}">
+              {{ article.headerInfo.DOI }}
+            </a>
+            {% if cmsLayout.publishConfig.licenseUrl %}
+               <a href="{{cmsLayout.publishConfig.licenseUrl}}">
+                  {{cmsLayout.publishConfig.licenseUrl}}
+               </a>
+            </p>
+            {% endif %}
+           </span>
+
+          <div class="header-bottom">
+              <div>
+                  <a href="#meta-paper" class="button-common icon">
+                    <svg version="1.2" preserveAspectRatio="none" class="ng-element" data-id="6e6fcd8020404bd38e89f394af88db10" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 16px; height: 22px;"><g transform="translate(8.881784197001252e-16, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></g><defs><path id="path-1739565650498244" d="M10.66477,0v5.50146h5.33523zM9.33523,5.50146v-5.50146h-7.33523c-1.10227,0 -2,0.9257 -2,2.06232v17.87537c0,1.13662 0.89773,2.06232 2,2.06232h12c1.10227,0 2,-0.9257 2,-2.06232v-13.05939h-5.29545c-0.77273,0 -1.36932,-0.61518 -1.36932,-1.37683zM11.33523,17.87537h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM11.33523,15.12756h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549c0,0.37497 -0.30114,0.68549 -0.66477,0.68549zM12,11.68842c0,0.38083 -0.30114,0.68549 -0.66477,0.68549h-6.66477c-0.36932,0 -0.66477,-0.31052 -0.66477,-0.68549c0,-0.37497 0.30114,-0.68549 0.66477,-0.68549h6.66477c0.36932,0 0.66477,0.31052 0.66477,0.68549z"></path></defs></svg>
+                  </a>
+                  <a href="#meta-registration" class="button-common icon">
+                    <svg version="1.2" preserveAspectRatio="none" xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" class="ng-element" data-id="7cc2619f8c58485b8a6eb3e147080999" style="overflow: visible; width: 24px; height: 19px; opacity: 1; mix-blend-mode: normal;"><defs><path id="path-1739565650495238" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></defs><g transform="translate(-1.455894955558383, -1.0958990096247736)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M1.8570140634704537 13.341609708467017 C1.2595399734843071 12.753243130143684 1.3887235605083388 11.666620170177152 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 1.8570140634704537 11.200167387362258 C1.8570140634704537 11.200167387362258 3.514870096945526 9.56758264751012 3.514870096945526 9.56758264751012 C4.112344186931672 8.979216069186782 5.091986388530578 8.979216069186782 5.6894604785167235 9.56758264751012 C5.6894604785167235 9.56758264751012 8.273132218997356 12.111870553773198 8.273132218997356 12.111870553773198 C8.870606308983497 12.70023713209653 9.85024851058241 12.70023713209653 10.447722600568548 12.111870553773198 C10.447722600568548 12.111870553773198 21.175342973022513 1.5371739433672764 21.175342973022513 1.5371739433672764 C21.772817063008645 0.9488073650439391 22.752459264607555 0.9488073650439391 23.349933354593702 1.5371739433672764 C23.349933354593702 1.5371739433672764 25.007789388068772 3.1697586832194173 25.007789388068772 3.1697586832194173 C25.605263478054926 3.7581252615427565 25.605263478054926 4.722834426000838 25.007789388068772 5.311201004324178 C25.007789388068772 5.311201004324178 10.442339951109219 19.654624075882275 10.442339951109219 19.654624075882275 C9.844865861123077 20.24299065420562 8.865223659524165 20.24299065420562 8.267749569538022 19.654624075882275 C8.267749569538022 19.654624075882275 1.8570140634704537 13.341609708467017 1.8570140634704537 13.341609708467017 Z"></path></g></svg>
+                  </a>
+                  <a href="#meta-data" class="button-common icon">
+                    <svg version="1.2" preserveAspectRatio="none" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 19px; height: 22px;"><g transform="translate(0, 0) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></g><defs><path id="path-1739565650491233" d="M13.60052,4.78722v17.21278h5.39948v-17.21278zM6.79751,22h5.40498v-22h-5.40498zM0,22h5.40498v-8.22977h-5.40498z"></path></defs></svg>
+                  </a>
+                  <a href="#meta-code" class="button-common icon">
+                    <svg version="1.2" preserveAspectRatio="none" class="ng-element" data-id="4165d51d892644f09982a9c0e74a1343" style="overflow: visible; opacity: 1; mix-blend-mode: normal; width: 24px; height: 19px; ;"><g transform="translate(-1.0130785099704553e-15, -0.0000016703287746139273) rotate(0)"><path style="stroke-width: 0; stroke-linecap: butt; stroke-linejoin: miter; fill: var(--color-skyblue);" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></g><defs><path id="path-1739565650483228" d="M10.4592,18.9812l-2.2896,-0.65574c-0.24,-0.06652 -0.3744,-0.31361 -0.3072,-0.5512l5.1216,-17.45305c0.0672,-0.23759 0.3168,-0.37063 0.5568,-0.30411l2.2896,0.65574c0.24,0.06652 0.3744,0.31361 0.3072,0.5512l-5.1168,17.45305c-0.072,0.23759 -0.3168,0.37539 -0.5568,0.30411zM6.1824,14.81869l1.632,-1.72012c0.1728,-0.18057 0.1632,-0.47042 -0.0288,-0.63673l-3.3984,-2.96032l3.3984,-2.96032c0.192,-0.16631 0.2064,-0.45616 0.0288,-0.63673l-1.632,-1.72012c-0.168,-0.17581 -0.456,-0.19007 -0.6384,-0.01901l-5.4,5.00831c-0.192,0.17581 -0.192,0.47517 0,0.65098l5.4048,5.01306c0.1824,0.17106 0.4704,0.16156 0.6384,-0.01901v0zM18.4512,14.84245l5.4048,-5.01306c0.192,-0.17581 0.192,-0.47517 0,-0.65098l-5.4048,-5.01781c-0.1776,-0.16631 -0.4656,-0.16156 -0.6384,0.01901l-1.632,1.72012c-0.1728,0.18057 -0.1632,0.47042 0.0288,0.63673l3.3984,2.96032l-3.3984,2.96032c-0.192,0.16631 -0.2064,0.45616 -0.0288,0.63673l1.632,1.72012c0.168,0.18057 0.456,0.19007 0.6384,0.02376v0z"></path></defs></svg>
+                  </a>
+              </div>
+              <div>
+                  {% if article.parsedSubmission.associated %}
+                    {% set relatedManuscripts = article.parsedSubmission.associated.split(', ') %}
+                  
+                    <div class="button-common" id="versions-btn" tabindex="0">
+                      Versions
+                      <div class="popover versions_btn">
+                        <ul class="version-list">
+                          {% for shortId in relatedManuscripts | reverse %}
+                            {% set isCurrent = (shortId | int) == (article.shortId | int) %}
+                            <li class="{% if isCurrent %}current{% endif %}">
+                              <a href="/articles/{{ shortId }}/index.html">
+                                Version {{ loop.length - loop.index0 }}
+                              </a>
+                            </li>
+                          {% endfor %}
+                        </ul>
+                      </div>
+                    </div>
+                  {% endif %}
+                  {% if article.files and article.files.length > 0 %}
+                    {% set pdfFiles = [] %}
+                    {% for file in article.files %}
+                      {% if file.name and file.name.includes('.pdf') %}
+                        {% set pdfFiles = (pdfFiles.push(file), pdfFiles) %}
+                      {% endif %}
+                    {% endfor %}
+                    
+                    {% if pdfFiles.length > 0 %}
+                      {% set lastPdf = pdfFiles[pdfFiles.length - 1] %}
+                      {% if lastPdf and lastPdf.storedObjects and lastPdf.storedObjects[0] %}
+                        <button class="button-common" id="download-pdf">
+                          {% set linkUrl = lastPdf.storedObjects[0].url %}
+                          {% set linkText = 'Download' %}
+                         {{ ('<a href="' + linkUrl + '" download="' + article.parsedSubmission.$title + '.pdf" target="_blank">' + linkText + '</a>') | linkHandler(article.shortId, 'supplementary-files', cmsConfig.group, cmsLayout.hexCode) | safe }}
+
+                        </button>
+                      {% endif %}
+                    {% endif %}
+                  {% endif %}       
+                 
+                  <button class="button-common" id="cite-btn">cite
+                    <div class='popover cite_btn'>
+                        <svg id='copy-to-clipboard' width='24' height='24' viewBox='0 0 24 24' xmlns='http://www.w3.org/2000/svg'
+                            xmlns:xlink='http://www.w3.org/1999/xlink' title="Copy to clipboard" style="cursor: pointer;">
+                            <rect width='24' height='24' stroke='none' fill='#000000 !important' opacity='0' />
+                        
+                        
+                            <g transform="matrix(0.16 0 0 0.16 12 12)">
+                                <g style="">
+                                    <g transform="matrix(1 0 0 1 -10 6)">
+                                        <path
+                                            style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: #0000 !important; fill-rule: nonzero; opacity: 1;"
+                                            transform=" translate(-54, -70)"
+                                            d="M 12 26 L 12 114 C 12 119.5 16.5 124 22 124 L 85.8 124 C 91.3 124 95.8 119.5 95.8 114 L 96 36 C 96 25 87 16 76 16 L 22 16 C 16.5 16 12 20.5 12 26 z"
+                                            stroke-linecap="round" />
+                                    </g>
+                                    <g transform="matrix(1 0 0 1 15 -9)">
+                                        <path
+                                            style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(113,194,255) !important; fill-rule: nonzero; opacity: 1;"
+                                            transform=" translate(-79, -55)"
+                                            d="M 116 110 C 114.3 110 113 108.7 113 107 L 113 23 C 113 13.6 105.4 6 96 6 L 42 6 C 40.3 6 39 4.7 39 3 C 39 1.2999999999999998 40.3 0 42 0 L 96 0 C 108.7 0 119 10.3 119 23 L 119 107 C 119 108.7 117.7 110 116 110 z"
+                                            stroke-linecap="round" />
+                                    </g>
+                                    <g transform="matrix(1 0 0 1 -10 6)">
+                                        <path
+                                            style="stroke: none; stroke-width: 1; stroke-dasharray: none; stroke-linecap: butt; stroke-dashoffset: 0; stroke-linejoin: miter; stroke-miterlimit: 4; fill: rgb(113,194,255) !important; fill-rule: nonzero; opacity: 1;"
+                                            transform=" translate(-54, -70)"
+                                            d="M 22 127 L 86 127 C 93.2 127 99 121.2 99 114 L 99 49 C 99 47.3 97.7 46 96 46 C 94.3 46 93 47.3 93 49 L 93 114 C 93 117.9 89.9 121 86 121 L 22 121 C 18.1 121 15 117.9 15 114 L 15 26 C 15 22.1 18.1 19 22 19 L 73 19 L 73 26 C 73 33.2 78.8 39 86 39 L 96 39 C 97.7 39 99 37.7 99 36 C 99 23.3 88.7 13 76 13 L 22 13 C 14.8 13 9 18.8 9 26 L 9 114 C 9 121.2 14.8 127 22 127 z M 92.7 33 L 86 33 C 82.1 33 79 29.9 79 26 L 79 19.3 C 86 20.5 91.5 26 92.7 33 z"
+                                            stroke-linecap="round" />
+                                    </g>
+                                </g>
+                            </g>
+                        </svg>
+                      <span>{{ article.parsedSubmission.cite | safe }}</span>
+                    </div>         
+                  </button>
+
+              </div>
+          </div>
+
+        </div>
+        <div class="article-content">
+            <div class="meta-data">
+                <aside class="toc-wrapper">
+                    <nav class="toc">
+                        <ol></ol>
+                    </nav>
+                </aside>
+            </div>
+            <article>
+                <section class="manuscript"></section>
+            </article>
+        </div>
+    </main>
+
+{% endblock %}
