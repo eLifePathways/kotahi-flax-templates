@@ -5,17 +5,17 @@
 
 {% set rorArray = [] %}
 {% for authorRor in article.headerInfo.authorNames %}
-   {% if authorRor.ror is iterable %}
-      {% for rorItem in authorRor.ror %}
-         {% if not (rorItem.label in rorArray) %}
-            {% set rorArray = rorArray.concat([rorItem.label]) %}
-         {% endif %}
-      {% endfor %}
-   {% else %}
-      {% if not (authorRor.ror.label in rorArray) %}
-         {% set rorArray = rorArray.concat([authorRor.ror.label]) %}
+  {% if authorRor.ror and authorRor.ror.length %}
+    {% for rorItem in authorRor.ror %}
+      {% if rorItem.label and not (rorItem.label in rorArray) %}
+        {% set rorArray = rorArray.concat([rorItem.label]) %}
       {% endif %}
-   {% endif %}
+    {% endfor %}
+  {% else %}
+    {% if authorRor.ror and authorRor.ror.label and not (authorRor.ror.label in rorArray) %}
+      {% set rorArray = rorArray.concat([authorRor.ror.label]) %}
+    {% endif %}
+  {% endif %}
 {% endfor %}
 
 <div id="main-container">
