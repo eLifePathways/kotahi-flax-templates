@@ -1,9 +1,8 @@
-<script>console.log('ARTICLE:', {{ article | dump | safe }});</script>
 {% set currentPage = article %}
 {% extends '../layouts/base.njk' %}
 {% set title = article.meta.title %}
 {% block content %}
- 
+
 {% set rorArray = [] %}
 {% if article.parsedSubmission.contributors %}
   {% set people = article.parsedSubmission.contributors %}
@@ -24,7 +23,6 @@
     {% endif %}
   {% endfor %}
 {% endfor %}
-
 
 <script>
   const rorArray = {{ rorArray | dump | safe }};
@@ -59,6 +57,7 @@
           const abstract = find('$abstract')
           const evaluations = find('evaluations')
           const registration = find('registration')
+          const notes = find('notes')
           const materials = find('materials')
           const data = find('data')
           const code = find('code')
@@ -151,7 +150,8 @@
                 </table>
               </div>
             `
-          }
+          }         
+                             
         
           const declarationsContent = () => {
             const declarationsSections = ['ethics','competingInterests', 'Funding', 'authorContributions']
@@ -164,7 +164,12 @@
             })
           }
           // #endregion Content
-        
+
+                const notesContent = () => {
+  const n = notes
+  if (!n) return null
+  return `<p>${n}</p>`
+}
           // #region Sections
           const sections = {
             abstract,
@@ -174,6 +179,7 @@
             data,
             code,
             paper,
+              notes: notesContent(),  
             declarations: declarationsContent(),
           }
         
